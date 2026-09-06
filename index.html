@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>교실 태블릿 알리미</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fffbebee',
+                            100: '#fef3c7',
+                            300: '#fcd34d',
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        .pulse-yellow {
+            animation: pulse-animation 2s infinite;
+        }
+        @keyframes pulse-animation {
+            0% { box-shadow: 0 0 0 0px rgba(245, 158, 11, 0.6); }
+            70% { box-shadow: 0 0 0 20px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0px rgba(245, 158, 11, 0); }
+        }
+    </style>
+</head>
+<body class="bg-amber-50 text-gray-800 min-h-screen flex flex-col">
+
+    <!-- Header / Navigation -->
+    <header class="bg-brand-400 text-gray-900 shadow-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white p-2 rounded-xl shadow-sm text-brand-600">
+                    <i class="fa-solid fa-chalkboard-user text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold leading-tight">교실 태블릿 알리미</h1>
+                    <p class="text-xs text-amber-900 font-medium">실시간 메시지 확인 시스템</p>
+                </div>
+            </div>
+            
+            <!-- Mode Switcher -->
+            <div class="flex bg-amber-200/70 p-1 rounded-xl">
+                <button id="btn-tablet-mode" onclick="switchMode('tablet')" class="px-4 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center space-x-1 bg-white text-brand-700 shadow-sm">
+                    <i class="fa-solid fa-tablet-screen-button"></i>
+                    <span>태블릿 화면 (학생용)</span>
+                </button>
+                <button id="btn-teacher-mode" onclick="switchMode('teacher')" class="px-4 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center space-x-1 text-amber-900 hover:text-black">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span>선생님 전송 화면</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
+
+        <!-- ================= TABLET MODE (Classroom Display) ================= -->
+        <section id="mode-tablet" class="flex-1 flex flex-col justify-center items-center py-4">
+            
+            <!-- No Active Message State -->
+            <div id="no-message" class="hidden text-center py-16 px-6 bg-white rounded-3xl shadow-lg border-4 border-amber-200 max-w-2xl w-full">
+                <div class="w-24 h-24 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6 text-brand-500">
+                    <i class="fa-regular fa-bell-slash text-5xl"></i>
+                </div>
+                <h2 class="text-3xl font-extrabold text-gray-800 mb-2">새로운 메시지가 없습니다</h2>
+                <p class="text-gray-500 text-lg">선생님의 메시지를 기다리는 중입니다...</p>
+                <div class="mt-8 inline-flex items-center space-x-2 text-sm text-amber-700 bg-amber-50 px-4 py-2 rounded-full border border-amber-200">
+                    <span class="w-2.5 h-2.5 bg-green-500 rounded-full animate-ping"></span>
+                    <span>태블릿 수신 대기 중</span>
+                </div>
+            </div>
+
+            <!-- Active Message Box -->
+            <div id="active-message-box" class="hidden max-w-3xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden border-4 border-brand-400 flex flex-col transform transition-all">
+                <!-- Message Top Banner -->
+                <div id="msg-header" class="bg-brand-400 px-8 py-5 flex justify-between items-center">
+                    <div class="flex items-center space-x-3">
+                        <span class="bg-white/80 backdrop-blur text-amber-900 text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider" id="msg-category">알림</span>
+                        <span class="text-amber-950 font-bold text-sm" id="msg-time">오전 10:30</span>
+                    </div>
+                    <div id="status-badge" class="flex items-center space-x-2 bg-amber-100 text-amber-900 px-4 py-1.5 rounded-full text-sm font-bold">
+                        <i class="fa-solid fa-clock"></i>
+                        <span>확인 대기 중</span>
+                    </div>
+                </div>
+
+                <!-- Message Body -->
+                <div class="p-8 sm:p-12 flex-1 flex flex-col justify-between">
+                    <div>
+                        <h2 id="msg-title" class="text-2xl sm:text-3xl font-black text-gray-900 mb-4"></h2>
+                        <div id="msg-content" class="text-xl sm:text-2xl text-gray-700 leading-relaxed whitespace-pre-wrap font-medium"></div>
+                    </div>
+
+                    <!-- Confirm Action Button & Two-way Student Reply -->
+                    <div class="mt-8 pt-6 border-t border-gray-100 flex flex-col items-center">
+                        <div id="reply-container" class="w-full mb-4">
+                            <label class="block text-xs font-bold text-amber-800 mb-2">💬 선생님께 답장 보내기 (선택)</label>
+                            <div class="flex flex-wrap gap-2 mb-2">
+                                <button type="button" onclick="setPresetReply('네, 준비 완료했습니다! ⭕')" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-xs font-bold transition-all">⭕ 준비 완료!</button>
+                                <button type="button" onclick="setPresetReply('질문이 있습니다! ❓')" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-xs font-bold transition-all">❓ 질문 있어요</button>
+                                <button type="button" onclick="setPresetReply('잘 알겠습니다! 👍')" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-xs font-bold transition-all">👍 잘 알겠습니다</button>
+                            </div>
+                            <input type="text" id="student-reply-input" placeholder="선생님께 전달할 간단한 한 줄 메시지 입력..." class="w-full px-4 py-2.5 rounded-xl border-2 border-amber-200 focus:border-brand-500 focus:outline-none text-sm font-medium transition-all">
+                        </div>
+
+                        <button id="btn-confirm" onclick="confirmActiveMessage()" class="w-full py-6 bg-brand-500 hover:bg-brand-600 active:scale-95 text-white font-extrabold text-2xl sm:text-3xl rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center justify-center space-x-4 pulse-yellow">
+                            <i class="fa-solid fa-circle-check text-4xl"></i>
+                            <span>넵, 확인했습니다!</span>
+                        </button>
+                        <p class="text-gray-400 text-sm mt-3 font-medium">관리 학생은 내용 확인 후 위 버튼을 탭 해주세요. (확인 전까지 알림음 반복)</p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================= TEACHER MODE (Send & Monitor) ================= -->
+        <section id="mode-teacher" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Message Creation Form (Left/Top) -->
+            <div class="lg:col-span-5 bg-white p-6 sm:p-8 rounded-3xl shadow-lg border-2 border-amber-200 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center space-x-2 mb-6 text-brand-700">
+                        <i class="fa-solid fa-paper-plane text-xl"></i>
+                        <h2 class="text-2xl font-bold">메시지 보내기</h2>
+                    </div>
+
+                    <form id="send-form" onsubmit="handleSendMessage(event)" class="space-y-5">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">중요도 / 유형</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="category" value="일반 알림" class="peer hidden" checked>
+                                    <div class="text-center py-2 px-3 rounded-xl border-2 border-gray-200 text-gray-600 font-bold text-sm peer-checked:border-brand-500 peer-checked:bg-amber-50 peer-checked:text-brand-700 transition-all">
+                                        📢 일반 알림
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="category" value="긴급 사항" class="peer hidden">
+                                    <div class="text-center py-2 px-3 rounded-xl border-2 border-gray-200 text-gray-600 font-bold text-sm peer-checked:border-red-500 peer-checked:bg-red-50 peer-checked:text-red-600 transition-all">
+                                        🚨 긴급 사항
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="category" value="준비물/과제" class="peer hidden">
+                                    <div class="text-center py-2 px-3 rounded-xl border-2 border-gray-200 text-gray-600 font-bold text-sm peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-600 transition-all">
+                                        ✏️ 준비물/과제
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="input-title" class="block text-sm font-bold text-gray-700 mb-1">제목</label>
+                            <input type="text" id="input-title" required placeholder="예: 3교시 체육관 이동 알림" class="w-full px-4 py-3 rounded-xl border-2 border-amber-200 focus:border-brand-500 focus:outline-none transition-all font-medium">
+                        </div>
+
+                        <div>
+                            <label for="input-content" class="block text-sm font-bold text-gray-700 mb-1">상세 내용</label>
+                            <textarea id="input-content" rows="4" required placeholder="학생들에게 전달할 메시지 내용을 입력하세요..." class="w-full px-4 py-3 rounded-xl border-2 border-amber-200 focus:border-brand-500 focus:outline-none transition-all font-medium resize-none"></textarea>
+                        </div>
+
+                        <button type="submit" id="btn-submit" class="w-full py-4 bg-brand-500 hover:bg-brand-600 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-share-from-square"></i>
+                            <span>태블릿으로 전송하기</span>
+                        </button>
+                    </form>
+                </div>
+                
+                <div class="mt-6 pt-4 border-t border-gray-100 text-xs text-gray-400 text-center">
+                    전송된 메시지는 태블릿 화면에 즉시 팝업으로 나타납니다.
+                </div>
+            </div>
+
+            <!-- History & Monitoring (Right/Bottom) -->
+            <div class="lg:col-span-7 bg-white p-6 sm:p-8 rounded-3xl shadow-lg border-2 border-amber-200 flex flex-col relative">
+                <!-- Teacher Toast Notification Banner -->
+                <div id="teacher-toast" class="hidden absolute top-4 right-4 left-4 bg-green-600 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between z-30 animate-bounce">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-circle-check text-3xl text-green-200"></i>
+                        <div>
+                            <p class="font-extrabold text-base sm:text-lg" id="toast-title">학생 확인 완료!</p>
+                            <p class="text-xs sm:text-sm text-green-100" id="toast-desc">학생이 메시지를 확인했습니다.</p>
+                        </div>
+                    </div>
+                    <button onclick="closeTeacherToast()" class="text-white hover:text-green-200 p-2">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+
+                <div class="flex justify-between items-center mb-6">
+                    <div class="flex items-center space-x-2 text-amber-800">
+                        <i class="fa-solid fa-list-check text-xl"></i>
+                        <h2 class="text-2xl font-bold">전송 내역 및 확인 상태</h2>
+                    </div>
+                    <span id="history-count" class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full">0건</span>
+                </div>
+
+                <!-- History List -->
+                <div id="history-list" class="flex-1 overflow-y-auto max-h-[500px] space-y-4 pr-1">
+                    <div class="text-center py-12 text-gray-400">
+                        <i class="fa-solid fa-inbox text-4xl mb-2"></i>
+                        <p>보낸 메시지 내역이 없습니다.</p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Modal Elements -->
+    <div id="custom-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl border-2 border-amber-300">
+            <div id="modal-icon" class="w-12 h-12 rounded-full bg-amber-100 text-brand-600 flex items-center justify-center mx-auto mb-4 text-xl">
+                <i class="fa-solid fa-info"></i>
+            </div>
+            <h3 id="modal-title" class="text-xl font-bold text-gray-800 mb-2">알림</h3>
+            <p id="modal-message" class="text-gray-600 text-sm mb-6">메시지 내용입니다.</p>
+            <button onclick="closeModal()" class="w-full py-2.5 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl transition-all">확인</button>
+        </div>
+    </div>
+
+    <!-- Firebase App Modules -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase configuration provided by user (jari-5c613)
+        const userFirebaseConfig = {
+            apiKey: "AIzaSyCgAvzXn5V_MA1jqEJuvREI4caqBlv35U4",
+            authDomain: "jari-5c613.firebaseapp.com",
+            projectId: "jari-5c613",
+            storageBucket: "jari-5c613.firebasestorage.app",
+            messagingSenderId: "632470920233",
+            appId: "1:632470920233:web:bc7c8e79cfdd29f503d038",
+            measurementId: "G-PHBJ7PN2KX"
+        };
+
+        const firebaseConfig = (typeof __firebase_config !== 'undefined' && __firebase_config) 
+            ? JSON.parse(__firebase_config) 
+            : userFirebaseConfig;
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'classroom-tablet-app';
+
+        // State Variables
+        let currentUser = null;
+        let messages = [];
+        let currentMode = 'tablet'; // 'tablet' or 'teacher'
+        let previousConfirmedMap = {}; // Tracks confirmed status changes for teacher alerts
+        let audioCtx = null;
+        let alarmInterval = null;
+
+        window.setPresetReply = function(text) {
+            const input = document.getElementById('student-reply-input');
+            if (input) {
+                input.value = text;
+            }
+        };
+
+        // Initialize Web Audio Chime Sound
+        function playChimeBeep() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                
+                const now = audioCtx.currentTime;
+                
+                // Tone 1
+                const osc1 = audioCtx.createOscillator();
+                const gain1 = audioCtx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(659.25, now); // E5
+                gain1.gain.setValueAtTime(0.3, now);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                osc1.connect(gain1);
+                gain1.connect(audioCtx.destination);
+                osc1.start(now);
+                osc1.stop(now + 0.4);
+
+                // Tone 2
+                const osc2 = audioCtx.createOscillator();
+                const gain2 = audioCtx.createGain();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(880, now + 0.15); // A5
+                gain2.gain.setValueAtTime(0.3, now + 0.15);
+                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                osc2.connect(gain2);
+                gain2.connect(audioCtx.destination);
+                osc2.start(now + 0.15);
+                osc2.stop(now + 0.6);
+            } catch (e) {
+                console.log("Audio playback error:", e);
+            }
+        }
+
+        // Start Repeating Alarm until stopped
+        function startRepeatingAlarm() {
+            if (alarmInterval) return; // already repeating
+            playChimeBeep();
+            alarmInterval = setInterval(playChimeBeep, 2000); // repeats every 2 seconds
+        }
+
+        // Stop Repeating Alarm
+        function stopRepeatingAlarm() {
+            if (alarmInterval) {
+                clearInterval(alarmInterval);
+                alarmInterval = null;
+            }
+        }
+
+        // Play Teacher Success Sound (when student confirms)
+        function playTeacherSuccessSound() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                
+                const now = audioCtx.currentTime;
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                notes.forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+                    gain.gain.setValueAtTime(0.2, now + idx * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.3);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + idx * 0.1);
+                    osc.stop(now + idx * 0.1 + 0.3);
+                });
+            } catch (e) {
+                console.log("Success audio error:", e);
+            }
+        }
+
+        // Initialize Authentication
+        async function initAuth() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.error("Authentication Error:", err);
+            }
+        }
+
+        // Listen for Auth Changes
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                subscribeToMessages();
+            }
+        });
+
+        // Initialize Auth Execution
+        initAuth();
+
+        // Subscribe to Firestore Collection
+        function subscribeToMessages() {
+            if (!currentUser) return;
+
+            const messagesRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
+
+            onSnapshot(messagesRef, (snapshot) => {
+                const list = [];
+                snapshot.forEach((doc) => {
+                    list.push({ id: doc.id, ...doc.data() });
+                });
+
+                // In-memory sort by timestamp descending
+                list.sort((a, b) => {
+                    const timeA = a.createdAt?.seconds || 0;
+                    const timeB = b.createdAt?.seconds || 0;
+                    return timeB - timeA;
+                });
+
+                // Detect if student newly confirmed a message (For Teacher Notification)
+                list.forEach(msg => {
+                    if (previousConfirmedMap[msg.id] === false && msg.confirmed === true) {
+                        // Student just clicked "확인했습니다"
+                        showTeacherConfirmationToast(msg);
+                    }
+                    previousConfirmedMap[msg.id] = !!msg.confirmed;
+                });
+
+                messages = list;
+
+                // Handle Tablet Repeating Alarm Logic
+                const unconfirmedMsg = messages.find(m => !m.confirmed);
+                if (unconfirmedMsg) {
+                    startRepeatingAlarm();
+                } else {
+                    stopRepeatingAlarm();
+                }
+
+                renderUI();
+            }, (error) => {
+                console.error("Firestore Error:", error);
+            });
+        }
+
+        // Teacher Toast Notification when Student Confirms
+        function showTeacherConfirmationToast(msg) {
+            playTeacherSuccessSound();
+            const toast = document.getElementById('teacher-toast');
+            const toastTitle = document.getElementById('toast-title');
+            const toastDesc = document.getElementById('toast-desc');
+
+            if (toast) {
+                const replyText = msg.studentReply ? ` / 답장: "${msg.studentReply}"` : '';
+                toastTitle.innerText = `🎉 학생이 메시지를 확인했습니다!`;
+                toastDesc.innerText = `제목: "${msg.title}" (${msg.confirmedAtTime || '방금'})${replyText}`;
+                toast.classList.remove('hidden');
+
+                setTimeout(() => {
+                    closeTeacherToast();
+                }, 8000);
+            }
+        }
+
+        window.closeTeacherToast = function() {
+            const toast = document.getElementById('teacher-toast');
+            if (toast) toast.classList.add('hidden');
+        };
+
+        // Render UI based on Mode and State
+        function renderUI() {
+            if (currentMode === 'tablet') {
+                renderTabletView();
+            } else {
+                renderTeacherView();
+            }
+        }
+
+        // Render Tablet Display
+        function renderTabletView() {
+            const noMsgEl = document.getElementById('no-message');
+            const activeBoxEl = document.getElementById('active-message-box');
+
+            const activeMsg = messages.find(m => !m.confirmed) || messages[0];
+
+            if (!activeMsg) {
+                noMsgEl.classList.remove('hidden');
+                activeBoxEl.classList.add('hidden');
+                return;
+            }
+
+            noMsgEl.classList.add('hidden');
+            activeBoxEl.classList.remove('hidden');
+
+            // Set Content
+            document.getElementById('msg-category').innerText = activeMsg.category || '알림';
+            document.getElementById('msg-title').innerText = activeMsg.title || '';
+            document.getElementById('msg-content').innerText = activeMsg.content || '';
+            
+            const date = activeMsg.createdAt?.seconds ? new Date(activeMsg.createdAt.seconds * 1000) : new Date();
+            document.getElementById('msg-time').innerText = date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+
+            const btnConfirm = document.getElementById('btn-confirm');
+            const statusBadge = document.getElementById('status-badge');
+            const replyContainer = document.getElementById('reply-container');
+            const replyInput = document.getElementById('student-reply-input');
+
+            if (activeMsg.confirmed) {
+                statusBadge.className = 'flex items-center space-x-2 bg-green-100 text-green-800 px-4 py-1.5 rounded-full text-sm font-bold';
+                statusBadge.innerHTML = `<i class="fa-solid fa-circle-check"></i><span>확인 완료 (${activeMsg.confirmedAtTime || ''})</span>`;
+                
+                if (replyContainer) replyContainer.classList.add('hidden');
+
+                btnConfirm.disabled = true;
+                btnConfirm.className = 'w-full py-6 bg-gray-200 text-gray-500 font-extrabold text-2xl sm:text-3xl rounded-2xl shadow-none cursor-not-allowed flex items-center justify-center space-x-4';
+                btnConfirm.innerHTML = `<i class="fa-solid fa-check text-3xl"></i><span>확인 완료되었습니다</span>`;
+            } else {
+                statusBadge.className = 'flex items-center space-x-2 bg-amber-200 text-amber-900 px-4 py-1.5 rounded-full text-sm font-bold animate-pulse';
+                statusBadge.innerHTML = `<i class="fa-solid fa-bell animate-bounce"></i><span>새 메시지 확인 필요 (알림 울림 중)</span>`;
+
+                if (replyContainer) replyContainer.classList.remove('hidden');
+                if (replyInput) replyInput.value = '';
+
+                btnConfirm.disabled = false;
+                btnConfirm.className = 'w-full py-6 bg-brand-500 hover:bg-brand-600 active:scale-95 text-white font-extrabold text-2xl sm:text-3xl rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center justify-center space-x-4 pulse-yellow';
+                btnConfirm.innerHTML = `<i class="fa-solid fa-circle-check text-4xl"></i><span>넵, 확인했습니다!</span>`;
+            }
+
+            btnConfirm.dataset.msgId = activeMsg.id;
+        }
+
+        // Render Teacher Dashboard View
+        function renderTeacherView() {
+            const historyList = document.getElementById('history-list');
+            const historyCount = document.getElementById('history-count');
+            historyCount.innerText = `${messages.length}건`;
+
+            if (messages.length === 0) {
+                historyList.innerHTML = `
+                    <div class="text-center py-12 text-gray-400">
+                        <i class="fa-solid fa-inbox text-4xl mb-2"></i>
+                        <p>보낸 메시지 내역이 없습니다.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            historyList.innerHTML = messages.map(msg => {
+                const date = msg.createdAt?.seconds ? new Date(msg.createdAt.seconds * 1000) : new Date();
+                const timeStr = date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+                
+                let badgeColor = 'bg-amber-100 text-amber-800';
+                if (msg.category === '긴급 사항') badgeColor = 'bg-red-100 text-red-700';
+                if (msg.category === '준비물/과제') badgeColor = 'bg-blue-100 text-blue-700';
+
+                return `
+                    <div class="p-4 rounded-2xl border-2 ${msg.confirmed ? 'border-green-300 bg-green-50/50' : 'border-amber-200 bg-white'} shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-3">
+                        <div class="flex justify-between items-start">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs font-bold px-2.5 py-0.5 rounded-full ${badgeColor}">${msg.category || '알림'}</span>
+                                <span class="text-xs text-gray-400">${timeStr}</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                ${msg.confirmed ? 
+                                    `<span class="text-xs font-extrabold text-green-800 bg-green-200 px-3 py-1 rounded-full flex items-center space-x-1 animate-pulse">
+                                        <i class="fa-solid fa-circle-check"></i>
+                                        <span>학생 확인 완료 (${msg.confirmedAtTime || ''})</span>
+                                     </span>` : 
+                                    `<span class="text-xs font-bold text-amber-700 bg-amber-100 px-3 py-1 rounded-full animate-pulse">
+                                        <i class="fa-solid fa-hourglass-half"></i>
+                                        <span>확인 대기 중 (알림음 울리는 중)</span>
+                                     </span>`
+                                }
+                                <button onclick="deleteMessage('${msg.id}')" class="text-gray-300 hover:text-red-500 p-1 transition-colors" title="삭제">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-lg">${escapeHtml(msg.title)}</h4>
+                            <p class="text-gray-600 text-sm mt-1 whitespace-pre-wrap">${escapeHtml(msg.content)}</p>
+                        </div>
+                        ${msg.studentReply ? `
+                            <div class="mt-2 p-2.5 bg-amber-100/70 rounded-xl border border-amber-200 text-xs font-bold text-amber-900 flex items-center space-x-2">
+                                <i class="fa-solid fa-comment-dots text-brand-600 text-sm"></i>
+                                <span>학생 답장: "${escapeHtml(msg.studentReply)}"</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Handle Sending New Message (Teacher)
+        window.handleSendMessage = async function(event) {
+            event.preventDefault();
+            if (!currentUser) {
+                showModal("오류", "인증 정보를 로딩 중입니다. 잠시 후 다시 시도해주세요.");
+                return;
+            }
+
+            const category = document.querySelector('input[name="category"]:checked').value;
+            const title = document.getElementById('input-title').value.trim();
+            const content = document.getElementById('input-content').value.trim();
+
+            if (!title || !content) return;
+
+            const btnSubmit = document.getElementById('btn-submit');
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> <span>전송 중...</span>`;
+
+            try {
+                const messagesRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
+                await addDoc(messagesRef, {
+                    category,
+                    title,
+                    content,
+                    confirmed: false,
+                    confirmedAtTime: null,
+                    createdAt: serverTimestamp()
+                });
+
+                document.getElementById('send-form').reset();
+                showModal("성공", "태블릿으로 메시지가 전송되었습니다! (학생 확인 시까지 알림음이 울립니다)");
+            } catch (err) {
+                console.error("Message Send Error:", err);
+                showModal("오류", "메시지 전송에 실패했습니다.");
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = `<i class="fa-solid fa-share-from-square"></i> <span>태블릿으로 전송하기</span>`;
+            }
+        };
+
+        // Confirm Active Message (Tablet / Student)
+        window.confirmActiveMessage = async function() {
+            stopRepeatingAlarm();
+
+            const btn = document.getElementById('btn-confirm');
+            const msgId = btn.dataset.msgId;
+            const replyInput = document.getElementById('student-reply-input');
+            const studentReply = replyInput ? replyInput.value.trim() : '';
+
+            if (!msgId || !currentUser) return;
+
+            try {
+                const msgDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'messages', msgId);
+                const nowStr = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+                
+                await updateDoc(msgDocRef, {
+                    confirmed: true,
+                    confirmedAtTime: nowStr,
+                    studentReply: studentReply || null
+                });
+
+                showModal("확인 완료", studentReply ? `답장("${studentReply}")과 함께 선생님께 확인 알림이 전송되었습니다.` : "선생님께 확인 상태가 전달되었습니다.");
+            } catch (err) {
+                console.error("Confirm Error:", err);
+                showModal("오류", "확인 처리 도중 오류가 발생했습니다.");
+            }
+        };
+
+        // Delete Message
+        window.deleteMessage = async function(msgId) {
+            if (!currentUser) return;
+            try {
+                const msgDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'messages', msgId);
+                await deleteDoc(msgDocRef);
+            } catch (err) {
+                console.error("Delete Error:", err);
+                showModal("오류", "메시지 삭제 실패");
+            }
+        };
+
+        // Switch Modes between Tablet and Teacher
+        window.switchMode = function(mode) {
+            currentMode = mode;
+            const tabletBtn = document.getElementById('btn-tablet-mode');
+            const teacherBtn = document.getElementById('btn-teacher-mode');
+            const tabletSec = document.getElementById('mode-tablet');
+            const teacherSec = document.getElementById('mode-teacher');
+
+            if (mode === 'tablet') {
+                tabletBtn.className = 'px-4 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center space-x-1 bg-white text-brand-700 shadow-sm';
+                teacherBtn.className = 'px-4 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center space-x-1 text-amber-900 hover:text-black';
+                tabletSec.classList.remove('hidden');
+                teacherSec.classList.add('hidden');
+            } else {
+                teacherBtn.className = 'px-4 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center space-x-1 bg-white text-brand-700 shadow-sm';
+                tabletBtn.className = 'px-4 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center space-x-1 text-amber-900 hover:text-black';
+                teacherSec.classList.remove('hidden');
+                tabletSec.classList.add('hidden');
+            }
+            renderUI();
+        };
+
+        // Custom Modal Alert Box
+        window.showModal = function(title, message) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = message;
+            document.getElementById('custom-modal').classList.remove('hidden');
+        };
+
+        window.closeModal = function() {
+            document.getElementById('custom-modal').classList.add('hidden');
+        };
+
+        // HTML Escape Helper
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
